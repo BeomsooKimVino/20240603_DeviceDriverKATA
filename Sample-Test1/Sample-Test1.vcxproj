@@ -99,7 +99,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\packages\gmock.1.11.0\lib\native\src\gmock\src\gmock_main.cc" />
-    <ClCompile Include="test.cpp" />
+    <ClCompile Include="application_test.cpp" />
+    <ClCompile Include="devicedriver_test.cpp" />
+    <ClCompile Include="mocks.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\20240603_DeviceDriverKATA\20240603_DeviceDriverKATA.vcxproj">
