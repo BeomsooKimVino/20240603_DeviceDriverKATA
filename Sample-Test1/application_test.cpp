@@ -7,6 +7,7 @@
 
 #include "../20240603_DeviceDriverKATA/Application.cpp"
 #include "mocks.cpp"
+#include "application_test.h"
 
 using namespace testing;
 
@@ -16,43 +17,46 @@ public:
     DeviceDriver drv{ &flash };
     Application app{ &drv };
 
+    void ReadAndVerify(long startAddress, long endAddress, long writeData)
+    {
+        oldstream = std::cout.rdbuf(buffer.rdbuf());
+
+        int readCallCount = (endAddress - startAddress + 1);
+        EXPECT_CALL(flash, read).Times(readCallCount * 5).WillRepeatedly(Return(writeData));
+        app.ReadAndPrint(startAddress, endAddress);
+
+        int expectData = writeData;
+        std::vector<std::string> tokens = tokenize(buffer.str());
+        for (auto element : tokens)
+        {
+            EXPECT_THAT(expectData, Eq(std::stoi(element)));
+        }
+
+        std::cout.rdbuf(oldstream);
+    }
+private:
+    std::stringstream buffer;
+    std::streambuf* oldstream;
+
+    std::vector<std::string> tokenize(const std::string& input) {
+        std::vector<std::string> tokens;
+        std::stringstream ss(input);
+        std::string token;
+        while (ss >> token) {
+            tokens.push_back(token);
+        }
+        return tokens;
+    }
 };
 
-std::vector<std::string> tokenize(const std::string& input) {
-    std::vector<std::string> tokens;
-    std::stringstream ss(input);
-    std::string token;
-    while (ss >> token) {
-        tokens.push_back(token);
-    }
-    return tokens;
-}
 
 TEST_F(ApplicationFixture, AppReadAndPrint) {
 
     long startAddress = 0x10;
     long endAddress = 0x15;
-    int readCallCount = (endAddress - startAddress + 1);
-    long expectData = 0xA;
+    long writeData = 0xA;
 
-    EXPECT_CALL(flash, read).Times(readCallCount*5).WillRepeatedly(Return(0xA));
-
-    std::stringstream buffer;
-    // 함수의 출력을 버퍼로 리디렉션
-    std::streambuf* old = std::cout.rdbuf(buffer.rdbuf());
-    //////////////////////////////////////////////////////////////////
-    
-    app.ReadAndPrint(startAddress, endAddress);
-
-    std::vector<std::string> tokens = tokenize(buffer.str());
-    for (auto element : tokens)
-    {
-        EXPECT_THAT(expectData, Eq(std::stoi(element)));
-    }
-    //////////////////////////////////////////////////////////////////
-
-    // 스트림 리디렉션을 원래대로 복구
-    std::cout.rdbuf(old);
+    ReadAndVerify(startAddress, endAddress, writeData);
 }
 
 TEST_F(ApplicationFixture, AppWriteAll) {
@@ -66,25 +70,6 @@ TEST_F(ApplicationFixture, AppWriteAll) {
     Application app(&drv);
     app.WriteAll(writeData);
 
-    std::stringstream buffer;
-    // 함수의 출력을 버퍼로 리디렉션
-    std::streambuf* old = std::cout.rdbuf(buffer.rdbuf());
-
-    //////////////////////////////////////////////////////////////////
-    long startAddress = 0x0;
-    long endAddress = 0x4;
-    readCallCount = (endAddress - startAddress + 1);
-    EXPECT_CALL(flash, read).Times(readCallCount * 5).WillRepeatedly(Return(writeData));
-    app.ReadAndPrint(startAddress, endAddress);
-
-    std::vector<std::string> tokens = tokenize(buffer.str());
-    int expectData = writeData;
-    for (auto element : tokens)
-    {
-        EXPECT_THAT(expectData, Eq(std::stoi(element)));
-    }
-    //////////////////////////////////////////////////////////////////
-
-    // 스트림 리디렉션을 원래대로 복구
-    std::cout.rdbuf(old);
+    ReadAndVerify(Application::writeAllStartAddress, Application::writeAllEndAddress, writeData);
 }
+
