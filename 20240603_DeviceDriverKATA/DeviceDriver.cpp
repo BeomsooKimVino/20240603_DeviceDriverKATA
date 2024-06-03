@@ -1,5 +1,5 @@
+#pragma once
 #include "DeviceDriver.h"
-
 
 class ReadFailException : public std::exception {
     std::string what_message;
@@ -30,8 +30,13 @@ DeviceDriver::DeviceDriver(FlashMemoryDevice *hardware) : m_hardware(hardware)
 
 int DeviceDriver::read(long address)
 {
-    // TODO: implement this method properly
     int ret = (int)(m_hardware->read(address));
+    CheckRTBB(address, ret);
+    return ret;
+}
+
+void DeviceDriver::CheckRTBB(long address, int ret)
+{
     for (int turn = 0; turn < 4; turn++)
     {
         int ret_inner = (int)(m_hardware->read(address));
@@ -40,17 +45,19 @@ int DeviceDriver::read(long address)
             throw ReadFailException("RTBB");
         }
     }
-    return ret;
 }
 
 void DeviceDriver::write(long address, int data)
 {
-    // TODO: implement this method
+    CheckCleanPage(address);
+    m_hardware->write(address, (unsigned char)data);
+}
+
+void DeviceDriver::CheckCleanPage(long address)
+{
     int ret = (int)(m_hardware->read(address));
     if (ret != 0xFF)
     {
         throw WriteFailException("Program Fail");
     }
-
-    m_hardware->write(address, (unsigned char)data);
 }

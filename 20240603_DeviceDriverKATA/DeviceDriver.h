@@ -5,9 +5,14 @@ class DeviceDriver
 {
 public:
     DeviceDriver(FlashMemoryDevice *hardware);
-    int read(long address);
-    void write(long address, int data);
+    virtual int read(long address);
+    void CheckRTBB(long address, int ret);
+    virtual void write(long address, int data);
+
+    void CheckCleanPage(long address);
 
 protected:
-    FlashMemoryDevice *m_hardware;
+    FlashMemoryDevice* m_hardware;
 };
+
+
